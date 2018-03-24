@@ -16,10 +16,15 @@ type responseWriter struct {
 }
 
 func newResponseWriter() *responseWriter {
-	return &responseWriter{
+	res := &responseWriter{
 		header: make(http.Header),
 		status: 200,
 	}
+
+	// set default content-type
+	res.header.Set("content-type", "application/json")
+
+	return res
 }
 
 func (r *responseWriter) Header() http.Header {
@@ -41,7 +46,7 @@ func (r *responseWriter) toLambdaResponse(encode bool) (events.APIGatewayProxyRe
 	} else {
 		body = r.buffer.String()
 	}
-	r.header.Set("content-size", strconv.Itoa(r.buffer.Len()))
+	r.header.Set("content-length", strconv.Itoa(r.buffer.Len()))
 	return events.APIGatewayProxyResponse{
 		StatusCode:      r.status,
 		Headers:         convertToLambdaHeader(r.header),
