@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -18,11 +17,6 @@ import (
 type contextKey string
 
 func createRequest(ctx context.Context, e events.APIGatewayProxyRequest) (*http.Request, error) {
-	parsedURL, err := url.Parse(e.Path)
-	if err != nil {
-		return nil, fmt.Errorf("Can not parse url %s (%v)", e.Path, err)
-	}
-
 	var body io.Reader = strings.NewReader(e.Body)
 	if e.IsBase64Encoded {
 		body = base64.NewDecoder(base64.StdEncoding, body)
@@ -34,10 +28,17 @@ func createRequest(ctx context.Context, e events.APIGatewayProxyRequest) (*http.
 	if err != nil {
 		length = -1
 	}
-
+	var qs []string
+	for key, val := range e.QueryStringParameters {
+		qs = append(qs, url.QueryEscape(key)+"="+url.QueryEscape(val))
+	}
 	req := &http.Request{
 		Method: e.HTTPMethod,
-		URL:    parsedURL,
+		URL: &url.URL{
+			Path:     e.Path,
+			RawPath:  e.Path,
+			RawQuery: strings.Join(qs, "&"),
+		},
 
 		// just hardcode it
 		Proto:      "HTTP/1.1",
