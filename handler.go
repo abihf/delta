@@ -3,6 +3,7 @@ package delta
 import (
 	"context"
 	"net/http"
+	"os"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -16,6 +17,16 @@ import (
 // delta.Start(nil, mux)
 func Start(h http.Handler) {
 	lambda.Start(CreateLambdaHandler(globalConfig, h))
+}
+
+// ServeOrStartLambda will start http server if it's not in lambda environment,
+// otherwise it starts handling lambda
+func ServeOrStartLambda(addr string, h http.Handler) {
+	if os.Getenv("LAMBDA_TASK_ROOT") == "" {
+		Start(h)
+	} else {
+		http.ListenAndServe(addr, h)
+	}
 }
 
 // LambdaHandler func type for lambda.Start()
