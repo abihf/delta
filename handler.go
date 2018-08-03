@@ -30,17 +30,20 @@ func ServeOrStartLambda(addr string, h http.Handler) {
 }
 
 // LambdaHandler func type for lambda.Start()
-type LambdaHandler func(context.Context, events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error)
+type LambdaHandler func(context.Context, *events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error)
 
 // CreateLambdaHandler create lambda handler
 func CreateLambdaHandler(conf *Configuration, h http.Handler) LambdaHandler {
-	return func(ctx context.Context, e events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-		req, err := createRequest(ctx, e)
+	return func(ctx context.Context, e *events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
+		req, err := NewRequest(ctx, e)
 		if err != nil {
-			return newErrorResponse(err), err
+			return NewErrorResponse(err), err
 		}
-		res := newResponseWriter()
+		res := NewResponseWriter()
+		res.encode = conf != nil && conf.EncodeResponse
+
 		h.ServeHTTP(res, req)
-		return res.toLambdaResponse(conf != nil && conf.EncodeResponse)
+		lambdaResponse := res.ToAPIGWProxyResponse()
+		return lambdaResponse, nil
 	}
 }

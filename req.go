@@ -3,7 +3,6 @@ package delta
 import (
 	"context"
 	"encoding/base64"
-	"errors"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -14,17 +13,16 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 )
 
-type contextKey string
-
-func createRequest(ctx context.Context, e events.APIGatewayProxyRequest) (*http.Request, error) {
+// NewRequest create http.Request based on API Gateway Proxy request
+func NewRequest(ctx context.Context, e *events.APIGatewayProxyRequest) (*http.Request, error) {
 	var body io.Reader = strings.NewReader(e.Body)
 	if e.IsBase64Encoded {
 		body = base64.NewDecoder(base64.StdEncoding, body)
 	}
 
-	headers := convertToHTTPHeader(e.Headers)
-	host := headers.Get("host")
-	length, err := strconv.ParseInt(headers.Get("content-length"), 10, 64)
+	header := HeaderFromAPIGWProxyHeader(e.Headers)
+	host := header.Get("host")
+	length, err := strconv.ParseInt(header.Get("content-length"), 10, 64)
 	if err != nil {
 		length = -1
 	}
@@ -46,7 +44,7 @@ func createRequest(ctx context.Context, e events.APIGatewayProxyRequest) (*http.
 		ProtoMinor: 1,
 
 		// content
-		Header: headers,
+		Header: header.Header,
 		Body:   ioutil.NopCloser(body),
 
 		// from header
@@ -56,17 +54,6 @@ func createRequest(ctx context.Context, e events.APIGatewayProxyRequest) (*http.
 		Host:             host,
 	}
 
-	withEvent := context.WithValue(ctx, contextKey("lambda-event"), &e)
-
+	withEvent := attachLambdaEvent(ctx, e)
 	return req.WithContext(withEvent), nil
-}
-
-// GetLambdaEvent from context
-func GetLambdaEvent(ctx context.Context) (*events.APIGatewayProxyRequest, error) {
-	if v := ctx.Value(contextKey("lambda-event")); v != nil {
-		if event, ok := v.(*events.APIGatewayProxyRequest); ok {
-			return event, nil
-		}
-	}
-	return nil, errors.New("GetLambdaEvent: invalid context")
 }

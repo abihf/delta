@@ -8,8 +8,8 @@ import (
 	"github.com/gotestyourself/gotestyourself/assert"
 )
 
-func Test_createRequest(t *testing.T) {
-	e := events.APIGatewayProxyRequest{
+func Test_NewRequest(t *testing.T) {
+	e := &events.APIGatewayProxyRequest{
 		HTTPMethod: "POST",
 		Path:       "/hello",
 		Body:       "body",
@@ -24,7 +24,7 @@ func Test_createRequest(t *testing.T) {
 			"b": "2",
 		},
 	}
-	req, err := createRequest(context.Background(), e)
+	req, err := NewRequest(context.Background(), e)
 	if err != nil {
 		t.Errorf("Failed to create request object %+v", err)
 	}
