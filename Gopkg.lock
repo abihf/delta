@@ -2,53 +2,76 @@
 
 
 [[projects]]
+  digest = "1:014e79cf5c422dd0547a87bde33c7f7b3cd29116a96fac8897c7e50f18531dea"
   name = "github.com/aws/aws-lambda-go"
   packages = [
     "events",
     "lambda",
     "lambda/messages",
-    "lambdacontext"
+    "lambdacontext",
   ]
-  revision = "fafa7e49388b8991caf99308e80655ba91816b72"
-  version = "v1.1.0"
+  pruneopts = "UT"
+  revision = "2d482ef09017ae953b1e8d5a6ddac5b696663a3c"
+  version = "v1.6.0"
 
 [[projects]]
+  digest = "1:2e3c336fc7fde5c984d2841455a658a6d626450b1754a854b3b32e7a8f49a07a"
   name = "github.com/google/go-cmp"
   packages = [
     "cmp",
     "cmp/internal/diff",
     "cmp/internal/function",
-    "cmp/internal/value"
+    "cmp/internal/value",
   ]
+  pruneopts = "UT"
   revision = "3af367b6b30c263d47e8895973edcca9a49cf029"
   version = "v0.2.0"
 
 [[projects]]
+  digest = "1:25c076b6616fd46da7c9318267ff27ea7e9cc24d739a22806ff0e0166b8d9d70"
   name = "github.com/gotestyourself/gotestyourself"
   packages = [
     "assert",
     "assert/cmp",
     "internal/format",
-    "internal/source"
+    "internal/source",
   ]
+  pruneopts = "UT"
   revision = "03704babdbbc36b67d9a4cd94c9e00adf82f339f"
   version = "v1.3.0"
 
 [[projects]]
+  digest = "1:40e195917a951a8bf867cd05de2a46aaf1806c50cf92eebf4c16f78cd196f747"
   name = "github.com/pkg/errors"
   packages = ["."]
+  pruneopts = "UT"
   revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
   version = "v0.8.0"
 
 [[projects]]
+  digest = "1:0028cb19b2e4c3112225cd871870f2d9cf49b9b4276531f03438a88e94be86fe"
   name = "github.com/pmezard/go-difflib"
   packages = ["difflib"]
+  pruneopts = "UT"
   revision = "792786c7400a136282c1664665ae0a8db921c6c2"
   version = "v1.0.0"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "a48773363e424927a1061f7c8ae724d3fc6481a971c85fe0878724d3b87fa8bd"
+  input-imports = [
+    "github.com/aws/aws-lambda-go/events",
+    "github.com/aws/aws-lambda-go/lambda",
+    "github.com/aws/aws-lambda-go/lambda/messages",
+    "github.com/aws/aws-lambda-go/lambdacontext",
+    "github.com/google/go-cmp/cmp",
+    "github.com/google/go-cmp/cmp/internal/diff",
+    "github.com/google/go-cmp/cmp/internal/function",
+    "github.com/google/go-cmp/cmp/internal/value",
+    "github.com/gotestyourself/gotestyourself/assert",
+    "github.com/gotestyourself/gotestyourself/assert/cmp",
+    "github.com/pkg/errors",
+    "github.com/pmezard/go-difflib/difflib",
+  ]
   solver-name = "gps-cdcl"
   solver-version = 1
