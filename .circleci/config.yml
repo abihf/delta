@@ -13,8 +13,12 @@ jobs:
           command: go mod download
 
       - run: 
+          name: Run linter
+          command: go vet -v
+
+      - run: 
           name: Run test
-          command: go test -v -race -coverprofile=coverage.txt -covermode=atomic
+          command: go test -v -coverprofile=coverage.txt -covermode=atomic
 
       - run: 
           name: Collect coverage
