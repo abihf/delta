@@ -22,7 +22,7 @@ func Start(h http.Handler) {
 // ServeOrStartLambda will start http server if it's not in lambda environment,
 // otherwise it starts handling lambda
 func ServeOrStartLambda(addr string, h http.Handler) {
-	if os.Getenv("LAMBDA_TASK_ROOT") == "" {
+	if _, ok := os.LookupEnv("LAMBDA_TASK_ROOT"); ok {
 		Start(h)
 	} else {
 		http.ListenAndServe(addr, h)
@@ -40,7 +40,7 @@ func CreateLambdaHandler(conf *Configuration, h http.Handler) LambdaHandler {
 			return NewErrorResponse(err), err
 		}
 		res := NewResponseWriter()
-		res.encode = conf != nil && conf.EncodeResponse
+		SetBase64Encoding(res, conf != nil && conf.EncodeResponse)
 
 		h.ServeHTTP(res, req)
 		lambdaResponse := res.ToAPIGWProxyResponse()
