@@ -3,19 +3,19 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/golang:1.10
+      - image: circleci/golang:1.11
 
-    working_directory: /go/src/github.com/abihf/delta
     steps:
       - checkout
 
-      # specify any bash command here prefixed with `run: `
       - run:
-          name: install dependencies
-          command: |
-            curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-            dep ensure
+          name: Download dependencies
+          command: go mod download
 
-      - run: go test -v -race -coverprofile=coverage.txt -covermode=atomic
+      - run: 
+          name: Run test
+          command: go test -v -race -coverprofile=coverage.txt -covermode=atomic
 
-      - run: bash <(curl -s https://codecov.io/bash)
+      - run: 
+          name: Collect coverage
+          command: bash <(curl -s https://codecov.io/bash)
