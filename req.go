@@ -30,17 +30,20 @@ func NewRequestV2(ctx context.Context, e *events.APIGatewayV2HTTPRequest) (*http
 	for key, val := range e.QueryStringParameters {
 		qs = append(qs, url.QueryEscape(key)+"="+url.QueryEscape(val))
 	}
+	u := &url.URL{
+		Path:     e.RequestContext.HTTP.Path,
+		Host:     host,
+		RawPath:  e.RawPath,
+		RawQuery: strings.Join(qs, "&"),
+		Scheme:   e.RequestContext.HTTP.Protocol,
+	}
 	req := &http.Request{
-		Method: e.RequestContext.HTTP.Method,
-		URL: &url.URL{
-			Path:     e.RequestContext.HTTP.Path,
-			Host:     host,
-			RawPath:  e.RawPath,
-			RawQuery: strings.Join(qs, "&"),
-		},
+		RequestURI: u.RequestURI(),
+		Method:     e.RequestContext.HTTP.Method,
+		URL:        u,
 
 		// just hardcode it
-		Proto:      e.RequestContext.HTTP.Protocol,
+		Proto:      "HTTP/1.1",
 		ProtoMajor: 1,
 		ProtoMinor: 1,
 
@@ -53,6 +56,7 @@ func NewRequestV2(ctx context.Context, e *events.APIGatewayV2HTTPRequest) (*http
 		TransferEncoding: []string{},
 		Close:            true,
 		Host:             host,
+		RemoteAddr:       e.RequestContext.HTTP.SourceIP,
 	}
 
 	withEvent := attachLambdaEvent(ctx, e)
@@ -76,13 +80,16 @@ func NewRequest(ctx context.Context, e *events.APIGatewayProxyRequest) (*http.Re
 	for key, val := range e.QueryStringParameters {
 		qs = append(qs, url.QueryEscape(key)+"="+url.QueryEscape(val))
 	}
+	u := &url.URL{
+		Scheme:   e.RequestContext.Protocol,
+		Path:     e.Path,
+		RawPath:  e.Path,
+		RawQuery: strings.Join(qs, "&"),
+	}
 	req := &http.Request{
-		Method: e.HTTPMethod,
-		URL: &url.URL{
-			Path:     e.Path,
-			RawPath:  e.Path,
-			RawQuery: strings.Join(qs, "&"),
-		},
+		Method:     e.HTTPMethod,
+		URL:        u,
+		RequestURI: u.RequestURI(),
 
 		// just hardcode it
 		Proto:      "HTTP/1.1",
@@ -98,6 +105,7 @@ func NewRequest(ctx context.Context, e *events.APIGatewayProxyRequest) (*http.Re
 		TransferEncoding: []string{},
 		Close:            true,
 		Host:             host,
+		RemoteAddr:       e.RequestContext.Identity.SourceIP,
 	}
 
 	withEvent := attachLambdaEvent(ctx, e)
