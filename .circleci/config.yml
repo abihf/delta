@@ -3,7 +3,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: circleci/golang:1.11
+      - image: circleci/golang
 
     steps:
       - checkout
@@ -12,14 +12,14 @@ jobs:
           name: Download dependencies
           command: go mod download
 
-      - run: 
+      - run:
           name: Run linter
           command: go vet -v
 
-      - run: 
+      - run:
           name: Run test
           command: go test -v -coverprofile=coverage.txt -covermode=atomic
 
-      - run: 
+      - run:
           name: Collect coverage
           command: bash <(curl -s https://codecov.io/bash)
