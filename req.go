@@ -21,6 +21,7 @@ func NewRequestV2(ctx context.Context, e *events.APIGatewayV2HTTPRequest) (*http
 	}
 
 	header := HeaderFromAPIGWProxyHeader(e.Headers)
+	header.Header["Cookie"] = e.Cookies
 	host := e.RequestContext.DomainName
 	length, err := strconv.ParseInt(header.Get("content-length"), 10, 64)
 	if err != nil {
