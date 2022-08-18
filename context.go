@@ -7,9 +7,7 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 )
 
-type contextKeyType string
-
-var contextKey contextKeyType = "lambda-event"
+const contextKey = "lambda-event"
 
 // GetLambdaEvent from context
 func GetLambdaEvent(ctx context.Context) (*events.APIGatewayProxyRequest, error) {
@@ -31,6 +29,6 @@ func GetLambdaEventV2(ctx context.Context) (*events.APIGatewayV2HTTPRequest, err
 	return nil, errors.New("GetLambdaEvent: invalid context")
 }
 
-func attachLambdaEvent(ctx context.Context, event interface{}) context.Context {
+func withLambdaEvent(ctx context.Context, event interface{}) context.Context {
 	return context.WithValue(ctx, contextKey, event)
 }

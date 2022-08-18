@@ -3,6 +3,7 @@ package delta
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -13,30 +14,49 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 )
 
-// NewRequestV2 create http.Request based on API Gateway Proxy request
-func NewRequestV2(ctx context.Context, e *events.APIGatewayV2HTTPRequest) (*http.Request, error) {
+type apigwCommon struct{}
+
+// FromRes implements Transformer
+func (*apigwCommon) FromRes(ctx context.Context, r *ResponseWriter) ([]byte, error) {
+	res := &events.APIGatewayProxyResponse{
+		StatusCode:        r.status,
+		MultiValueHeaders: r.header,
+		IsBase64Encoded:   r.encode,
+		Body:              r.bodyString(),
+	}
+	return json.Marshal(res)
+}
+
+type apigwV2 struct {
+	apigwCommon
+}
+
+func WithAPIGatewayV2() Options {
+	return WithTransformer(&apigwV2{})
+}
+
+// ToReq implements Transformer
+func (*apigwV2) ToReq(ctx context.Context, payload []byte) (*http.Request, error) {
+	var e events.APIGatewayV2HTTPRequest
+	err := json.Unmarshal(payload, &e)
+	if err != nil {
+		return nil, err
+	}
 	var body io.Reader = strings.NewReader(e.Body)
 	if e.IsBase64Encoded {
 		body = base64.NewDecoder(base64.StdEncoding, body)
 	}
 
-	header := HeaderFromAPIGWProxyHeader(e.Headers)
-	header.Header["Cookie"] = e.Cookies
+	header := apigwConvertHeader(e.Headers)
+	header["Cookie"] = e.Cookies
 	host := e.RequestContext.DomainName
-	length, err := strconv.ParseInt(header.Get("content-length"), 10, 64)
-	if err != nil {
-		length = -1
-	}
-	var qs []string
-	for key, val := range e.QueryStringParameters {
-		qs = append(qs, url.QueryEscape(key)+"="+url.QueryEscape(val))
-	}
+	length, _ := strconv.ParseInt(header.Get("content-length"), 10, 64)
 	u := &url.URL{
 		Path:     e.RequestContext.HTTP.Path,
 		Host:     host,
 		RawPath:  e.RawPath,
-		RawQuery: strings.Join(qs, "&"),
-		Scheme:   e.RequestContext.HTTP.Protocol,
+		RawQuery: e.RawQueryString,
+		Scheme:   "https",
 	}
 	req := &http.Request{
 		RequestURI: u.RequestURI(),
@@ -49,7 +69,7 @@ func NewRequestV2(ctx context.Context, e *events.APIGatewayV2HTTPRequest) (*http
 		ProtoMinor: 1,
 
 		// content
-		Header: header.Header,
+		Header: header,
 		Body:   ioutil.NopCloser(body),
 
 		// from header
@@ -60,18 +80,27 @@ func NewRequestV2(ctx context.Context, e *events.APIGatewayV2HTTPRequest) (*http
 		RemoteAddr:       e.RequestContext.HTTP.SourceIP,
 	}
 
-	withEvent := attachLambdaEvent(ctx, e)
-	return req.WithContext(withEvent), nil
+	return req.WithContext(withLambdaEvent(ctx, e)), nil
 }
 
-// NewRequest create http.Request based on API Gateway Proxy request
-func NewRequest(ctx context.Context, e *events.APIGatewayProxyRequest) (*http.Request, error) {
+type apigwV1 struct {
+	apigwCommon
+}
+
+func WithAPIGatewayV1() Options {
+	return WithTransformer(&apigwV1{})
+}
+
+// ToReq implements Transformer
+func (*apigwV1) ToReq(ctx context.Context, payload []byte) (*http.Request, error) {
+	var e events.APIGatewayProxyRequest
+
 	var body io.Reader = strings.NewReader(e.Body)
 	if e.IsBase64Encoded {
 		body = base64.NewDecoder(base64.StdEncoding, body)
 	}
 
-	header := HeaderFromAPIGWProxyHeader(e.Headers)
+	header := apigwConvertHeader(e.Headers)
 	host := header.Get("host")
 	length, err := strconv.ParseInt(header.Get("content-length"), 10, 64)
 	if err != nil {
@@ -98,7 +127,7 @@ func NewRequest(ctx context.Context, e *events.APIGatewayProxyRequest) (*http.Re
 		ProtoMinor: 1,
 
 		// content
-		Header: header.Header,
+		Header: header,
 		Body:   ioutil.NopCloser(body),
 
 		// from header
@@ -109,6 +138,14 @@ func NewRequest(ctx context.Context, e *events.APIGatewayProxyRequest) (*http.Re
 		RemoteAddr:       e.RequestContext.Identity.SourceIP,
 	}
 
-	withEvent := attachLambdaEvent(ctx, e)
-	return req.WithContext(withEvent), nil
+	return req.WithContext(withLambdaEvent(ctx, e)), nil
+}
+
+// apigwConvertHeader creates new Header from APIGWProxyHeader
+func apigwConvertHeader(ph map[string]string) http.Header {
+	header := make(http.Header)
+	for name, value := range ph {
+		header.Set(name, value)
+	}
+	return header
 }
