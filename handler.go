@@ -2,75 +2,47 @@ package delta
 
 import (
 	"context"
+	"fmt"
 	"net/http"
-	"os"
+	"strconv"
 
-	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
-// Start lambda server
-//
-// Example:
-// mux := http.NewServeMux()
-// mux.Handle("/", handeHandler)
-// delta.Start(nil, mux)
-func Start(h http.Handler) {
-	var handler interface{}
-	switch os.Getenv("LAMBDA_PAYLOAD_FORMAT") {
-	case "2.0":
-		handler = CreateLambdaHandlerV2(globalConfig, h)
-	default:
-		handler = CreateLambdaHandler(globalConfig, h)
-	}
-	lambda.Start(handler)
+type Handler struct {
+	c *config
+	h http.Handler
 }
 
-// ServeOrStartLambda will start http server if it's not in lambda environment,
-// otherwise it starts handling lambda
-func ServeOrStartLambda(addr string, h http.Handler) error {
-	if _, ok := os.LookupEnv("LAMBDA_TASK_ROOT"); ok {
-		Start(h)
-		return nil
+func NewHandler(h http.Handler, opts ...Options) lambda.Handler {
+	var c config
+	for _, o := range opts {
+		o(&c)
 	}
-
-	return http.ListenAndServe(addr, h)
+	if c.transformer == nil {
+		c.transformer = &apigwV1{}
+	}
+	return &Handler{h: h, c: &c}
 }
 
-// LambdaHandler func type for lambda.Start()
-type LambdaHandler func(context.Context, *events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error)
-
-// CreateLambdaHandler create lambda handler
-func CreateLambdaHandler(conf *Configuration, h http.Handler) LambdaHandler {
-	return func(ctx context.Context, e *events.APIGatewayProxyRequest) (*events.APIGatewayProxyResponse, error) {
-		req, err := NewRequest(ctx, e)
-		if err != nil {
-			return NewErrorResponse(err), err
-		}
-		res := NewResponseWriter()
-		SetBase64Encoding(res, conf != nil && conf.EncodeResponse)
-
-		h.ServeHTTP(res, req)
-		lambdaResponse := res.ToAPIGWProxyResponse()
-		return lambdaResponse, nil
+// Invoke implements lambda.Handler
+func (lh *Handler) Invoke(ctx context.Context, payload []byte) ([]byte, error) {
+	req, err := lh.c.transformer.ToReq(ctx, payload)
+	if err != nil {
+		return nil, fmt.Errorf("can not transform request payload: %w", err)
 	}
+
+	res := NewResponseWriter()
+	lh.h.ServeHTTP(res, req)
+	res.header.Set("content-length", strconv.Itoa(res.buffer.Len()))
+
+	b, err := lh.c.transformer.FromRes(ctx, res)
+	if err != nil {
+		return nil, fmt.Errorf("can not transform response: %w", err)
+	}
+	return b, nil
 }
 
-// LambdaHandlerV2 func type for lambda.Start()
-type LambdaHandlerV2 func(context.Context, *events.APIGatewayV2HTTPRequest) (*events.APIGatewayProxyResponse, error)
-
-// CreateLambdaHandlerV2 create lambda handler
-func CreateLambdaHandlerV2(conf *Configuration, h http.Handler) LambdaHandlerV2 {
-	return func(ctx context.Context, e *events.APIGatewayV2HTTPRequest) (*events.APIGatewayProxyResponse, error) {
-		req, err := NewRequestV2(ctx, e)
-		if err != nil {
-			return NewErrorResponse(err), err
-		}
-		res := NewResponseWriter()
-		SetBase64Encoding(res, conf != nil && conf.EncodeResponse)
-
-		h.ServeHTTP(res, req)
-		lambdaResponse := res.ToAPIGWProxyResponse()
-		return lambdaResponse, nil
-	}
+func (lh *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	lh.h.ServeHTTP(w, r)
 }

@@ -1,15 +1,15 @@
 package delta
 
-// Configuration customize delta behaviour
-type Configuration struct {
-	EncodeResponse bool
+// config customize delta behaviour
+type config struct {
+	transformer    Transformer
+	encodeResponse bool
 }
 
-var globalConfig = &Configuration{
-	EncodeResponse: false,
-}
+type Options func(*config)
 
-// Configure delta
-func Configure(conf *Configuration) {
-	globalConfig = conf
+func WithEncodeResponse() Options {
+	return func(c *config) {
+		c.encodeResponse = true
+	}
 }
