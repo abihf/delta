@@ -22,9 +22,6 @@ func NewResponseWriter() *ResponseWriter {
 		status: 200,
 	}
 
-	// set default content-type
-	res.header.Set("content-type", "application/json")
-
 	return res
 }
 

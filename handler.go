@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-
-	"github.com/aws/aws-lambda-go/lambda"
 )
 
 type Handler struct {
@@ -14,29 +12,33 @@ type Handler struct {
 	h http.Handler
 }
 
-func NewHandler(h http.Handler, opts ...Options) lambda.Handler {
+func NewHandler(h http.Handler, opts ...Options) *Handler {
 	var c config
 	for _, o := range opts {
 		o(&c)
 	}
 	if c.transformer == nil {
-		c.transformer = &apigwV1{}
+		c.transformer = &ApiGatewayV1Transformer{}
 	}
 	return &Handler{h: h, c: &c}
 }
 
 // Invoke implements lambda.Handler
 func (lh *Handler) Invoke(ctx context.Context, payload []byte) ([]byte, error) {
-	req, err := lh.c.transformer.ToReq(ctx, payload)
+	req, err := lh.c.transformer.Request(ctx, payload)
 	if err != nil {
 		return nil, fmt.Errorf("can not transform request payload: %w", err)
 	}
 
 	res := NewResponseWriter()
 	lh.h.ServeHTTP(res, req)
-	res.header.Set("content-length", strconv.Itoa(res.buffer.Len()))
 
-	b, err := lh.c.transformer.FromRes(ctx, res)
+	// set content length
+	if res.header.Get("content-length") == "" && res.header.Get("content-encoding") == "" {
+		res.header.Set("content-length", strconv.Itoa(res.buffer.Len()))
+	}
+
+	b, err := lh.c.transformer.Response(ctx, res)
 	if err != nil {
 		return nil, fmt.Errorf("can not transform response: %w", err)
 	}

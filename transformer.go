@@ -7,8 +7,8 @@ import (
 )
 
 type Transformer interface {
-	ToReq(context.Context, []byte) (*http.Request, error)
-	FromRes(context.Context, *ResponseWriter) ([]byte, error)
+	Request(context.Context, []byte) (*http.Request, error)
+	Response(context.Context, *ResponseWriter) ([]byte, error)
 }
 
 func WithTransformer(t Transformer) Options {

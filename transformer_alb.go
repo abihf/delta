@@ -2,7 +2,7 @@ package delta
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -11,14 +11,14 @@ import (
 	json "github.com/json-iterator/go"
 )
 
-type alb struct{}
+type AlbTransformer struct{}
 
 func WithALB() Options {
-	return WithTransformer(&alb{})
+	return WithTransformer(AlbTransformer{})
 }
 
-// FromRes implements Transformer
-func (*alb) FromRes(_ context.Context, r *ResponseWriter) ([]byte, error) {
+// Response implements Transformer
+func (AlbTransformer) Response(_ context.Context, r *ResponseWriter) ([]byte, error) {
 	res := &events.ALBTargetGroupResponse{
 		StatusCode:        r.status,
 		MultiValueHeaders: r.header,
@@ -28,8 +28,8 @@ func (*alb) FromRes(_ context.Context, r *ResponseWriter) ([]byte, error) {
 	return json.Marshal(res)
 }
 
-// ToReq implements Transformer
-func (*alb) ToReq(ctx context.Context, payload []byte) (*http.Request, error) {
+// Request implements Transformer
+func (AlbTransformer) Request(ctx context.Context, payload []byte) (*http.Request, error) {
 	var e events.ALBTargetGroupRequest
 	json.Unmarshal(payload, &e)
 	header := http.Header(e.MultiValueHeaders)
@@ -45,7 +45,7 @@ func (*alb) ToReq(ctx context.Context, payload []byte) (*http.Request, error) {
 		RequestURI: u.RequestURI(),
 		Method:     e.HTTPMethod,
 		URL:        &u,
-
+		
 		// just hardcode it
 		Proto:      "HTTP/1.1",
 		ProtoMajor: 1,
@@ -53,7 +53,7 @@ func (*alb) ToReq(ctx context.Context, payload []byte) (*http.Request, error) {
 
 		// content
 		Header: header,
-		Body:   ioutil.NopCloser(strings.NewReader(e.Body)),
+		Body:   io.NopCloser(strings.NewReader(e.Body)),
 
 		// from header
 		ContentLength:    int64(len(e.Body)),

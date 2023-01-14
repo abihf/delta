@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 
@@ -12,14 +12,14 @@ import (
 	json "github.com/json-iterator/go"
 )
 
-type lambdaUrl struct{}
+type LambdaURLTransformer struct{}
 
 func WithLambdaURL() Options {
-	return WithTransformer(&lambdaUrl{})
+	return WithTransformer(LambdaURLTransformer{})
 }
 
-// FromRes implements Transformer
-func (*lambdaUrl) FromRes(ctx context.Context, w *ResponseWriter) ([]byte, error) {
+// Response implements Transformer
+func (LambdaURLTransformer) Response(ctx context.Context, w *ResponseWriter) ([]byte, error) {
 	res := &events.LambdaFunctionURLResponse{
 		StatusCode:      w.status,
 		Headers:         convertHttpHeader(w.header),
@@ -29,8 +29,8 @@ func (*lambdaUrl) FromRes(ctx context.Context, w *ResponseWriter) ([]byte, error
 	return json.Marshal(res)
 }
 
-// ToReq implements Transformer
-func (*lambdaUrl) ToReq(ctx context.Context, payload []byte) (*http.Request, error) {
+// Request implements Transformer
+func (LambdaURLTransformer) Request(ctx context.Context, payload []byte) (*http.Request, error) {
 	var e events.LambdaFunctionURLRequest
 	json.Unmarshal(payload, &e)
 	header := toHttpHeader(e.Headers)
@@ -64,7 +64,7 @@ func (*lambdaUrl) ToReq(ctx context.Context, payload []byte) (*http.Request, err
 
 		// content
 		Header: header,
-		Body:   ioutil.NopCloser(bytes.NewReader(body)),
+		Body:   io.NopCloser(bytes.NewReader(body)),
 
 		// from header
 		ContentLength:    int64(len(body)),

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -16,8 +15,8 @@ import (
 
 type apigwCommon struct{}
 
-// FromRes implements Transformer
-func (*apigwCommon) FromRes(ctx context.Context, r *ResponseWriter) ([]byte, error) {
+// Response implements Transformer
+func (apigwCommon) Response(ctx context.Context, r *ResponseWriter) ([]byte, error) {
 	res := &events.APIGatewayProxyResponse{
 		StatusCode:        r.status,
 		MultiValueHeaders: r.header,
@@ -27,16 +26,16 @@ func (*apigwCommon) FromRes(ctx context.Context, r *ResponseWriter) ([]byte, err
 	return json.Marshal(res)
 }
 
-type apigwV2 struct {
+type ApiGatewayV2Transformer struct {
 	apigwCommon
 }
 
 func WithAPIGatewayV2() Options {
-	return WithTransformer(&apigwV2{})
+	return WithTransformer(ApiGatewayV2Transformer{})
 }
 
-// ToReq implements Transformer
-func (*apigwV2) ToReq(ctx context.Context, payload []byte) (*http.Request, error) {
+// Request implements Transformer
+func (ApiGatewayV2Transformer) Request(ctx context.Context, payload []byte) (*http.Request, error) {
 	var e events.APIGatewayV2HTTPRequest
 	err := json.Unmarshal(payload, &e)
 	if err != nil {
@@ -70,7 +69,7 @@ func (*apigwV2) ToReq(ctx context.Context, payload []byte) (*http.Request, error
 
 		// content
 		Header: header,
-		Body:   ioutil.NopCloser(body),
+		Body:   io.NopCloser(body),
 
 		// from header
 		ContentLength:    length,
@@ -80,19 +79,19 @@ func (*apigwV2) ToReq(ctx context.Context, payload []byte) (*http.Request, error
 		RemoteAddr:       e.RequestContext.HTTP.SourceIP,
 	}
 
-	return req.WithContext(withLambdaEvent(ctx, e)), nil
+	return req, nil
 }
 
-type apigwV1 struct {
+type ApiGatewayV1Transformer struct {
 	apigwCommon
 }
 
 func WithAPIGatewayV1() Options {
-	return WithTransformer(&apigwV1{})
+	return WithTransformer(ApiGatewayV1Transformer{})
 }
 
-// ToReq implements Transformer
-func (*apigwV1) ToReq(ctx context.Context, payload []byte) (*http.Request, error) {
+// Request implements Transformer
+func (ApiGatewayV1Transformer) Request(ctx context.Context, payload []byte) (*http.Request, error) {
 	var e events.APIGatewayProxyRequest
 
 	var body io.Reader = strings.NewReader(e.Body)
@@ -128,7 +127,7 @@ func (*apigwV1) ToReq(ctx context.Context, payload []byte) (*http.Request, error
 
 		// content
 		Header: header,
-		Body:   ioutil.NopCloser(body),
+		Body:   io.NopCloser(body),
 
 		// from header
 		ContentLength:    length,
@@ -138,7 +137,7 @@ func (*apigwV1) ToReq(ctx context.Context, payload []byte) (*http.Request, error
 		RemoteAddr:       e.RequestContext.Identity.SourceIP,
 	}
 
-	return req.WithContext(withLambdaEvent(ctx, e)), nil
+	return req, nil
 }
 
 // apigwConvertHeader creates new Header from APIGWProxyHeader
