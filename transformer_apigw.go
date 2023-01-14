@@ -17,11 +17,15 @@ type apigwCommon struct{}
 
 // Response implements Transformer
 func (apigwCommon) Response(ctx context.Context, r *ResponseWriter) ([]byte, error) {
+	headers := make(map[string]string, len(r.header))
+	for name, value := range r.header {
+		headers[name] = value[0]
+	}
 	res := &events.APIGatewayProxyResponse{
-		StatusCode:        r.status,
-		MultiValueHeaders: r.header,
-		IsBase64Encoded:   r.encode,
-		Body:              r.bodyString(),
+		StatusCode:      r.status,
+		Headers:         headers,
+		IsBase64Encoded: r.encode,
+		Body:            r.bodyString(),
 	}
 	return json.Marshal(res)
 }
@@ -93,28 +97,24 @@ func WithAPIGatewayV1() Options {
 // Request implements Transformer
 func (ApiGatewayV1Transformer) Request(ctx context.Context, payload []byte) (*http.Request, error) {
 	var e events.APIGatewayProxyRequest
+	err := json.Unmarshal(payload, &e)
+	if err != nil {
+		return nil, err
+	}
 
 	var body io.Reader = strings.NewReader(e.Body)
 	if e.IsBase64Encoded {
 		body = base64.NewDecoder(base64.StdEncoding, body)
 	}
 
-	header := apigwConvertHeader(e.Headers)
+	header := http.Header(e.MultiValueHeaders)
 	host := header.Get("host")
-	length, err := strconv.ParseInt(header.Get("content-length"), 10, 64)
-	if err != nil {
-		length = -1
-	}
-	var qs []string
-	for key, val := range e.QueryStringParameters {
-		qs = append(qs, url.QueryEscape(key)+"="+url.QueryEscape(val))
-	}
 	u := &url.URL{
 		Scheme:   e.RequestContext.Protocol,
 		Path:     e.Path,
-		RawPath:  e.Path,
-		RawQuery: strings.Join(qs, "&"),
+		RawQuery: url.Values(e.MultiValueQueryStringParameters).Encode(),
 	}
+	
 	req := &http.Request{
 		Method:     e.HTTPMethod,
 		URL:        u,
@@ -130,7 +130,7 @@ func (ApiGatewayV1Transformer) Request(ctx context.Context, payload []byte) (*ht
 		Body:   io.NopCloser(body),
 
 		// from header
-		ContentLength:    length,
+		ContentLength:    int64(len(e.Body)),
 		TransferEncoding: []string{},
 		Close:            true,
 		Host:             host,

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strconv"
 )
 
 type Handler struct {
@@ -32,11 +31,6 @@ func (lh *Handler) Invoke(ctx context.Context, payload []byte) ([]byte, error) {
 
 	res := NewResponseWriter()
 	lh.h.ServeHTTP(res, req)
-
-	// set content length
-	if res.header.Get("content-length") == "" && res.header.Get("content-encoding") == "" {
-		res.header.Set("content-length", strconv.Itoa(res.buffer.Len()))
-	}
 
 	b, err := lh.c.transformer.Response(ctx, res)
 	if err != nil {
