@@ -3,32 +3,22 @@ package delta
 import (
 	"context"
 	"errors"
-
-	"github.com/aws/aws-lambda-go/events"
+	"net/http"
 )
 
-const contextKey = "lambda-event"
+type contextKeyType string
+var contextKey = contextKeyType("lambda-event")
 
-// GetLambdaEvent from context
-func GetLambdaEvent(ctx context.Context) (*events.APIGatewayProxyRequest, error) {
+func getEvent[T any](ctx context.Context) (T, error) {
 	if v := ctx.Value(contextKey); v != nil {
-		if event, ok := v.(*events.APIGatewayProxyRequest); ok {
+		if event, ok := v.(T); ok {
 			return event, nil
 		}
 	}
-	return nil, errors.New("GetLambdaEvent: invalid context")
+	var zero T
+	return zero, errors.New("can not get event: invalid context")
 }
 
-// GetLambdaEventV2 from context
-func GetLambdaEventV2(ctx context.Context) (*events.APIGatewayV2HTTPRequest, error) {
-	if v := ctx.Value(contextKey); v != nil {
-		if event, ok := v.(*events.APIGatewayV2HTTPRequest); ok {
-			return event, nil
-		}
-	}
-	return nil, errors.New("GetLambdaEvent: invalid context")
-}
-
-func withLambdaEvent(ctx context.Context, event interface{}) context.Context {
-	return context.WithValue(ctx, contextKey, event)
+func withContextEvent(r *http.Request, ctx context.Context, event interface{}) *http.Request {
+	return r.WithContext(context.WithValue(ctx, contextKey, event))
 }

@@ -61,7 +61,7 @@ func (ApiGatewayV2Transformer) Request(ctx context.Context, payload []byte) (*ht
 		RawQuery: e.RawQueryString,
 		Scheme:   "https",
 	}
-	req := &http.Request{
+	req := http.Request{
 		RequestURI: u.RequestURI(),
 		Method:     e.RequestContext.HTTP.Method,
 		URL:        u,
@@ -83,7 +83,12 @@ func (ApiGatewayV2Transformer) Request(ctx context.Context, payload []byte) (*ht
 		RemoteAddr:       e.RequestContext.HTTP.SourceIP,
 	}
 
-	return req, nil
+
+	return withContextEvent(&req, ctx, &e), nil
+}
+
+func GetApiGatewayV2Event(ctx context.Context) (*events.APIGatewayV2HTTPRequest, error)  {
+	return getEvent[*events.APIGatewayV2HTTPRequest](ctx)
 }
 
 type ApiGatewayV1Transformer struct {
@@ -115,7 +120,7 @@ func (ApiGatewayV1Transformer) Request(ctx context.Context, payload []byte) (*ht
 		RawQuery: url.Values(e.MultiValueQueryStringParameters).Encode(),
 	}
 	
-	req := &http.Request{
+	req := http.Request{
 		Method:     e.HTTPMethod,
 		URL:        u,
 		RequestURI: u.RequestURI(),
@@ -137,7 +142,11 @@ func (ApiGatewayV1Transformer) Request(ctx context.Context, payload []byte) (*ht
 		RemoteAddr:       e.RequestContext.Identity.SourceIP,
 	}
 
-	return req, nil
+	return withContextEvent(&req, ctx, &e), nil
+}
+
+func GetApiGatewayV1Event(ctx context.Context) (*events.APIGatewayProxyRequest, error)  {
+	return getEvent[*events.APIGatewayProxyRequest](ctx)
 }
 
 // apigwConvertHeader creates new Header from APIGWProxyHeader

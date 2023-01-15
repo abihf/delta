@@ -62,5 +62,9 @@ func (AlbTransformer) Request(ctx context.Context, payload []byte) (*http.Reques
 		Host:             host,
 		RemoteAddr:       header.Get("x-forwarded-for"),
 	}
-	return &req, nil
+	return withContextEvent(&req, ctx, &e), nil
+}
+
+func GetAlbEvent(ctx context.Context) (*events.ALBTargetGroupRequest, error)  {
+	return getEvent[*events.ALBTargetGroupRequest](ctx)
 }

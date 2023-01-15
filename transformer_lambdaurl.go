@@ -73,5 +73,9 @@ func (LambdaURLTransformer) Request(ctx context.Context, payload []byte) (*http.
 		Host:             host,
 		RemoteAddr:       header.Get("x-forwarded-for"),
 	}
-	return &req, nil
+	return withContextEvent(&req, ctx, &e), nil
+}
+
+func GetLambdaUrlEvent(ctx context.Context) (*events.LambdaFunctionURLRequest, error)  {
+	return getEvent[*events.LambdaFunctionURLRequest](ctx)
 }
