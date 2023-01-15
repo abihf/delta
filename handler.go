@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+
+	"github.com/aws/aws-lambda-go/lambda"
 )
 
 type Handler struct {
@@ -11,13 +13,17 @@ type Handler struct {
 	h http.Handler
 }
 
+// make sure it implements lambda's & http's handler
+var _ lambda.Handler = &Handler{}
+var _ http.Handler = &Handler{}
+
 func NewHandler(h http.Handler, opts ...Options) *Handler {
 	var c config
 	for _, o := range opts {
 		o(&c)
 	}
 	if c.transformer == nil {
-		c.transformer = &ApiGatewayV1Transformer{}
+		c.transformer = GetDefaultTransformer()
 	}
 	return &Handler{h: h, c: &c}
 }
