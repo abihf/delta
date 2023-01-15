@@ -19,6 +19,10 @@ func getEvent[T any](ctx context.Context) (T, error) {
 	return zero, errors.New("can not get event: invalid context")
 }
 
+func GetEvent(ctx context.Context) (any, error) {
+	return getEvent[any](ctx)
+}
+
 func withContextEvent(r *http.Request, ctx context.Context, event interface{}) *http.Request {
 	return r.WithContext(context.WithValue(ctx, contextKey, event))
 }
