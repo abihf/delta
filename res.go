@@ -4,8 +4,13 @@ import (
 	"bytes"
 	"encoding/base64"
 	"errors"
+	"io"
 	"net/http"
 )
+
+var _ http.ResponseWriter = &ResponseWriter{}
+var _ io.StringWriter = &ResponseWriter{}
+var _ io.ReaderFrom = &ResponseWriter{}
 
 // ResponseWriter implements http.ResponseWriter used for buffering response
 type ResponseWriter struct {
@@ -26,25 +31,35 @@ func NewResponseWriter() *ResponseWriter {
 }
 
 // Header returns http.Header. You can modify it to send response header
-func (r *ResponseWriter) Header() http.Header {
-	return r.header
+func (rw *ResponseWriter) Header() http.Header {
+	return rw.header
 }
 
 // Write appends chunk to response body
-func (r *ResponseWriter) Write(chunk []byte) (int, error) {
-	return r.buffer.Write(chunk)
+func (rw *ResponseWriter) Write(chunk []byte) (int, error) {
+	return rw.buffer.Write(chunk)
 }
 
 // WriteHeader set status code of current request
-func (r *ResponseWriter) WriteHeader(statusCode int) {
-	r.status = statusCode
+func (rw *ResponseWriter) WriteHeader(statusCode int) {
+	rw.status = statusCode
 }
 
-func (r *ResponseWriter) bodyString() string {
-	if !r.encode {
-		return r.buffer.String()
+func (rw *ResponseWriter) bodyString() string {
+	if !rw.encode {
+		return rw.buffer.String()
 	}
-	return base64.RawStdEncoding.EncodeToString(r.buffer.Bytes())
+	return base64.RawStdEncoding.EncodeToString(rw.buffer.Bytes())
+}
+
+// ReadFrom implements
+func (rw *ResponseWriter) ReadFrom(r io.Reader) (n int64, err error) {
+	return rw.buffer.ReadFrom(r)
+}
+
+// WriteString implements io.StringWriter
+func (rw *ResponseWriter) WriteString(s string) (n int, err error) {
+	return rw.buffer.WriteString(s)
 }
 
 // SetBase64Encoding overrides base64 encoding for this response
