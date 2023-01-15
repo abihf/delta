@@ -76,6 +76,6 @@ func (LambdaURLTransformer) Request(ctx context.Context, payload []byte) (*http.
 	return withContextEvent(&req, ctx, &e), nil
 }
 
-func GetLambdaUrlEvent(ctx context.Context) (*events.LambdaFunctionURLRequest, error)  {
+func GetLambdaUrlEvent(ctx context.Context) (*events.LambdaFunctionURLRequest, error) {
 	return getEvent[*events.LambdaFunctionURLRequest](ctx)
 }

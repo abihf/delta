@@ -7,6 +7,7 @@ import (
 )
 
 type contextKeyType string
+
 var contextKey = contextKeyType("lambda-event")
 
 func getEvent[T any](ctx context.Context) (T, error) {

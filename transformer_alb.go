@@ -45,7 +45,7 @@ func (AlbTransformer) Request(ctx context.Context, payload []byte) (*http.Reques
 		RequestURI: u.RequestURI(),
 		Method:     e.HTTPMethod,
 		URL:        &u,
-		
+
 		// just hardcode it
 		Proto:      "HTTP/1.1",
 		ProtoMajor: 1,
@@ -65,6 +65,6 @@ func (AlbTransformer) Request(ctx context.Context, payload []byte) (*http.Reques
 	return withContextEvent(&req, ctx, &e), nil
 }
 
-func GetAlbEvent(ctx context.Context) (*events.ALBTargetGroupRequest, error)  {
+func GetAlbEvent(ctx context.Context) (*events.ALBTargetGroupRequest, error) {
 	return getEvent[*events.ALBTargetGroupRequest](ctx)
 }

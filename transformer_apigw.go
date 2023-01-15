@@ -83,11 +83,10 @@ func (ApiGatewayV2Transformer) Request(ctx context.Context, payload []byte) (*ht
 		RemoteAddr:       e.RequestContext.HTTP.SourceIP,
 	}
 
-
 	return withContextEvent(&req, ctx, &e), nil
 }
 
-func GetApiGatewayV2Event(ctx context.Context) (*events.APIGatewayV2HTTPRequest, error)  {
+func GetApiGatewayV2Event(ctx context.Context) (*events.APIGatewayV2HTTPRequest, error) {
 	return getEvent[*events.APIGatewayV2HTTPRequest](ctx)
 }
 
@@ -119,7 +118,7 @@ func (ApiGatewayV1Transformer) Request(ctx context.Context, payload []byte) (*ht
 		Path:     e.Path,
 		RawQuery: url.Values(e.MultiValueQueryStringParameters).Encode(),
 	}
-	
+
 	req := http.Request{
 		Method:     e.HTTPMethod,
 		URL:        u,
@@ -145,7 +144,7 @@ func (ApiGatewayV1Transformer) Request(ctx context.Context, payload []byte) (*ht
 	return withContextEvent(&req, ctx, &e), nil
 }
 
-func GetApiGatewayV1Event(ctx context.Context) (*events.APIGatewayProxyRequest, error)  {
+func GetApiGatewayV1Event(ctx context.Context) (*events.APIGatewayProxyRequest, error) {
 	return getEvent[*events.APIGatewayProxyRequest](ctx)
 }
 
