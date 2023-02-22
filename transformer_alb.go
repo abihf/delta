@@ -32,7 +32,7 @@ func (AlbTransformer) Response(_ context.Context, r *ResponseWriter) ([]byte, er
 func (AlbTransformer) Request(ctx context.Context, payload []byte) (*http.Request, error) {
 	var e events.ALBTargetGroupRequest
 	json.Unmarshal(payload, &e)
-	header := http.Header(e.MultiValueHeaders)
+	header := convertToHttpHeader(e.Headers)
 	host := header.Get("host")
 	qs := url.Values(e.MultiValueQueryStringParameters)
 	u := url.URL{

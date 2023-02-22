@@ -22,7 +22,7 @@ func WithLambdaURL() Options {
 func (LambdaURLTransformer) Response(ctx context.Context, w *ResponseWriter) ([]byte, error) {
 	res := &events.LambdaFunctionURLResponse{
 		StatusCode:      w.status,
-		Headers:         convertHttpHeader(w.header),
+		Headers:         convertFromHttpHeader(w.header),
 		IsBase64Encoded: w.encode,
 		Body:            w.bodyString(),
 	}
@@ -33,7 +33,7 @@ func (LambdaURLTransformer) Response(ctx context.Context, w *ResponseWriter) ([]
 func (LambdaURLTransformer) Request(ctx context.Context, payload []byte) (*http.Request, error) {
 	var e events.LambdaFunctionURLRequest
 	json.Unmarshal(payload, &e)
-	header := toHttpHeader(e.Headers)
+	header := convertToHttpHeader(e.Headers)
 	host := header.Get("host")
 	var body []byte
 	if e.IsBase64Encoded {

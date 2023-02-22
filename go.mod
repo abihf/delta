@@ -3,8 +3,8 @@ module github.com/abihf/delta/v2
 go 1.18
 
 retract (
-	v2.0.0 // api gateway v1 error :bow:
 	v2.0.1 // should be tagged as alpha :bow:
+	v2.0.0 // api gateway v1 error :bow:
 )
 
 require (

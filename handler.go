@@ -36,6 +36,7 @@ func (lh *Handler) Invoke(ctx context.Context, payload []byte) ([]byte, error) {
 	}
 
 	res := NewResponseWriter()
+	res.encode = lh.c.encodeResponse
 	lh.h.ServeHTTP(res, req)
 
 	b, err := lh.c.transformer.Response(ctx, res)

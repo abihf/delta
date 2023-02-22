@@ -21,9 +21,9 @@ func ServeOrStartLambda(addr string, h http.Handler, opts ...Options) error {
 // Start lambda server
 //
 // Example:
-// mux := http.NewServeMux()
-// mux.Handle("/", handeHandler)
-// delta.Start(nil, mux)
+//   mux := http.NewServeMux()
+//   mux.Handle("/", handeHandler)
+//   delta.Start(nil, mux)
 func Start(h http.Handler, opts ...Options) {
 	lambda.Start(NewHandler(h, opts...))
 }

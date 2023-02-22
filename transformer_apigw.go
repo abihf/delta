@@ -17,13 +17,10 @@ type apigwCommon struct{}
 
 // Response implements Transformer
 func (apigwCommon) Response(ctx context.Context, r *ResponseWriter) ([]byte, error) {
-	headers := make(map[string]string, len(r.header))
-	for name, value := range r.header {
-		headers[name] = value[0]
-	}
 	res := &events.APIGatewayProxyResponse{
 		StatusCode:      r.status,
-		Headers:         headers,
+		Headers:         convertFromHttpHeader(r.header),
+
 		IsBase64Encoded: r.encode,
 		Body:            r.bodyString(),
 	}
@@ -50,7 +47,7 @@ func (ApiGatewayV2Transformer) Request(ctx context.Context, payload []byte) (*ht
 		body = base64.NewDecoder(base64.StdEncoding, body)
 	}
 
-	header := apigwConvertHeader(e.Headers)
+	header := convertToHttpHeader(e.Headers)
 	header["Cookie"] = e.Cookies
 	host := e.RequestContext.DomainName
 	length, _ := strconv.ParseInt(header.Get("content-length"), 10, 64)
@@ -111,7 +108,7 @@ func (ApiGatewayV1Transformer) Request(ctx context.Context, payload []byte) (*ht
 		body = base64.NewDecoder(base64.StdEncoding, body)
 	}
 
-	header := http.Header(e.MultiValueHeaders)
+	header := convertToHttpHeader(e.Headers)
 	host := header.Get("host")
 	u := &url.URL{
 		Scheme:   e.RequestContext.Protocol,
@@ -146,13 +143,4 @@ func (ApiGatewayV1Transformer) Request(ctx context.Context, payload []byte) (*ht
 
 func GetApiGatewayV1Event(ctx context.Context) (*events.APIGatewayProxyRequest, error) {
 	return getEvent[*events.APIGatewayProxyRequest](ctx)
-}
-
-// apigwConvertHeader creates new Header from APIGWProxyHeader
-func apigwConvertHeader(ph map[string]string) http.Header {
-	header := make(http.Header)
-	for name, value := range ph {
-		header.Set(name, value)
-	}
-	return header
 }
