@@ -8,7 +8,7 @@ retract (
 )
 
 require (
-	github.com/aws/aws-lambda-go v1.51.0
+	github.com/aws/aws-lambda-go v1.51.1
 	github.com/json-iterator/go v1.1.12
 )
 
